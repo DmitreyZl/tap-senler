@@ -7,7 +7,8 @@ import logging
 from senlerpy import Senler, methods
 import typing as t
 from importlib import resources
-import datetime
+from datetime import datetime, timedelta
+
 
 from singer_sdk import typing as th  # JSON Schema typing helpers
 from singer_sdk.helpers.jsonpath import extract_jsonpath
@@ -69,13 +70,15 @@ class DeliveriesStat(SenlerStream):
         """
         # Ваш токен доступа
         # params = self.config.get("params") or {}
+        current_date = datetime.now().date()
+        yesterday_date = current_date - timedelta(days=1)
         token = self.config.get('token')
         api = Senler(token)
 
         records = api(
             methods.Deliveries.stat,
-            date_from=self.config.get('date_from'),
-            date_to=self.config.get('date_to'),
+            date_from=self.config.get('date_from', str(yesterday_date)),
+            date_to=self.config.get('date_to', str(current_date)),
             vk_group_id=self.config.get('group_id'),
             count=100
         )
@@ -213,13 +216,15 @@ class StatSubscribeStream(SenlerStream):
         """
         # Ваш токен доступа
         # params = self.config.get("params") or {}
+        current_date = datetime.now().date()
+        yesterday_date = current_date - timedelta(days=1)
         token = self.config.get('token')
         api = Senler(token)
 
         records = api(
             methods.Subscribers.stat_subscribe,
-            date_from=self.config.get('date_from'),
-            date_to=self.config.get('date_to'),
+            date_from=self.config.get('date_from', str(yesterday_date)),
+            date_to=self.config.get('date_to', str(current_date)),
             vk_group_id=self.config.get('group_id'),
             count=100
         )
