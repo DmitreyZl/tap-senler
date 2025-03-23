@@ -149,7 +149,7 @@ class DeliveriesGet(SenlerStream):
 
         items = records['items']
         offset = 100
-        records_ = []
+        records_ = {'items': []}
         while len(items) == 100 or len(records_.get('items')) == 100:
             records_ = api(
                 methods.Deliveries.get,
@@ -231,7 +231,7 @@ class StatSubscribeStream(SenlerStream):
 
         items = records['items']
         offset = 100
-        records_ = []
+        records_ = {'items': []}
         while len(items) == 100 or len(records_.get('items')) == 100:
             records_ = api(
                 methods.Subscribers.stat_subscribe,
