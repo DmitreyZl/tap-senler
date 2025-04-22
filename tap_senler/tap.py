@@ -51,9 +51,9 @@ class TapSenler(Tap):
             A list of discovered streams.
         """
         return [
-           streams.DeliveriesStat(self),
-           streams.StatSubscribeStream(self),
-           streams.DeliveriesGet(self)
+            streams.DeliveriesGet(self),
+            streams.DeliveriesStat(self),
+            streams.StatSubscribeStream(self),
         ]
 
 
