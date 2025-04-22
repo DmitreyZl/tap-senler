@@ -92,7 +92,13 @@ class DeliveriesGet(SenlerStream):
             i.update({'school': self.config.get('school'),
                       'group_id': self.config.get('group_id')})
 
-        self.cont["ids"] = [record.get('delivery_id') for record in items]  # Обновляем состояние
+        target_date = (datetime.now() - timedelta(days=22)).replace(hour=0, minute=0, second=0)
+
+        self.cont["ids"] = [record.get('delivery_id')
+                            for record in items
+                            if record.get('date')
+                            and (datetime.strptime(record['date'], '%d.%m.%Y %H:%M:%S') >= target_date)
+        ] # Обновляем состояние
         # Логируем изменения в контексте
 
         self.logger.info(f"Updated context: {self.cont}")
@@ -125,7 +131,9 @@ class DeliveriesStat(DeliveriesGet):
         th.Property("error_code", th.IntegerType),
         th.Property("conversation_message_id", th.IntegerType),
         th.Property("school", th.StringType),
-        th.Property("group_id", th.IntegerType)
+        th.Property("group_id", th.IntegerType),
+        th.Property("is_read", th.IntegerType),
+        th.Property("reaction_id", th.IntegerType)
     ).to_dict()
 
     def get_records(
