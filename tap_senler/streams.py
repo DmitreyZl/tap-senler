@@ -92,7 +92,7 @@ class DeliveriesGet(SenlerStream):
             i.update({'school': self.config.get('school'),
                       'group_id': self.config.get('group_id')})
 
-        target_date = (datetime.now() - timedelta(days=22)).replace(hour=0, minute=0, second=0)
+        target_date = (datetime.now() - timedelta(days=2)).replace(hour=0, minute=0, second=0)
 
         self.cont["ids"] = [record.get('delivery_id')
                             for record in items
