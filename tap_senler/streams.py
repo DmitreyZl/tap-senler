@@ -178,6 +178,63 @@ class BotsGet(SenlerStream):
         yield from extract_jsonpath(self.records_jsonpath, input=items)
 
 
+class BotsGetSteps(BotsGet):
+    """Define custom stream."""
+
+    name = "bots_get_steps"
+    primary_keys = ["bot_id", "step_id"]
+
+    schema = th.PropertiesList(
+        th.Property(
+            "bot_id",
+            th.IntegerType,
+            description="The post's system ID",
+        ),
+        th.Property("step_id", th.StringType),
+        th.Property("title", th.StringType),
+        th.Property("type", th.StringType),
+        th.Property("lead_inc", th.IntegerType),
+    ).to_dict()
+
+    def get_records(
+            self,
+            context: Context | None,
+    ) -> t.Iterable[dict]:
+        """Return a generator of record-type dictionary objects.
+
+        The optional `context` argument is used to identify a specific slice of the
+        stream if partitioning is required for the stream. Most implementations do not
+        require partitioning and should ignore the `context` argument.
+
+        Args:
+            context: Stream partition or context dictionary.
+
+        Raises:
+            NotImplementedError: If the implementation is TODO
+        """
+        # Ваш токен доступа
+        # params = self.config.get("params") or {}
+        token = self.config.get('token')
+        api = Senler(token)
+
+        ids = self.cont.get("ids", [])
+        self.logger.info(f"Get cont: {ids}")
+        items = []
+        for d_id in ids:
+            records = api(
+                methods.Bots.get_steps,
+                vk_group_id=self.config.get('group_id'),
+                bot_id=d_id,
+                count=100
+            )
+            for i in records['items']:
+                i.update({'school': self.config.get('school'),
+                          'group_id': self.config.get('group_id'),
+                          'bot_id': d_id})
+            items += records['items']
+        yield from extract_jsonpath(self.records_jsonpath, input=items)
+
+
 class BotsStat(BotsGet):
     """Define custom stream."""
 
