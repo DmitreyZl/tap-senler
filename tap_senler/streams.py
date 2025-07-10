@@ -92,14 +92,12 @@ class DeliveriesGet(SenlerStream):
             i.update({'school': self.config.get('school'),
                       'group_id': self.config.get('group_id')})
 
-        target_date = (datetime.now() - timedelta(days=82)).replace(hour=0, minute=0, second=0)
-        target_date_y = (datetime.now() - timedelta(days=54)).replace(hour=0, minute=0, second=0)
+        target_date = (datetime.now() - timedelta(days=7)).replace(hour=0, minute=0, second=0)
 
         self.cont["ids"] = [record.get('delivery_id')
                             for record in items
                             if record.get('date')
                             and (datetime.strptime(record['date'], '%d.%m.%Y %H:%M:%S') >= target_date)
-                            and (datetime.strptime(record['date'], '%d.%m.%Y %H:%M:%S') < target_date_y)
         ] # Обновляем состояние
         # Логируем изменения в контексте
 
@@ -335,7 +333,7 @@ class DeliveriesStat(DeliveriesGet):
         token = self.config.get('token')
         api = Senler(token)
 
-        ids = [12595977, 12741374]
+        ids = self.cont.get("ids", [])
         self.logger.info(f"Get cont: {ids}")
         items = []
         for d_id in ids:
