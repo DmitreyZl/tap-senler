@@ -503,3 +503,178 @@ class StatSubscribeStream(SenlerStream):
                       'group_id': self.config.get('group_id')})
 
         yield from extract_jsonpath(self.records_jsonpath, input=items)
+
+
+
+class UtmsGet(SenlerStream):
+    """Define custom stream."""
+
+    name = "utms_get"
+    primary_keys = ["utm_id"]
+    cont = {}
+
+    schema = th.PropertiesList(
+        th.Property(
+            "utm_id",
+            th.IntegerType,
+            description="The post's system ID",
+        ),
+        th.Property("name", th.StringType),
+        th.Property("subscription_id", th.IntegerType),
+        th.Property("count", th.IntegerType),
+        th.Property("group_id", th.IntegerType)
+    ).to_dict()
+
+    def get_records(
+            self,
+            context: Context | None,
+    ) -> t.Iterable[dict]:
+        """Return a generator of record-type dictionary objects.
+
+        The optional `context` argument is used to identify a specific slice of the
+        stream if partitioning is required for the stream. Most implementations do not
+        require partitioning and should ignore the `context` argument.
+
+        Args:
+            context: Stream partition or context dictionary.
+
+        Raises:
+            NotImplementedError: If the implementation is TODO
+        """
+        # Ваш токен доступа
+        # params = self.config.get("params") or {}
+        token = self.config.get('token')
+        api = Senler(token)
+
+        records = api(
+            methods.Utms.get,
+            vk_group_id=self.config.get('group_id'),
+            count=100
+        )
+
+        items = records['items']
+        offset = 100
+        records_ = {'items': []}
+        while len(items) == 100 or len(records_.get('items')) == 100:
+            records_ = api(
+                methods.Utms.get,
+                vk_group_id=self.config.get('group_id'),
+                count=100,
+                offset=offset
+            )
+            items += records_['items']
+            offset += 100
+            if offset == 100000:
+                break
+
+        for i in items:
+            i.update({'school': self.config.get('school'),
+                      'group_id': self.config.get('group_id')})
+
+        self.cont["ids"] = [record.get('utm_id')
+                            for record in items
+                            ]
+        # Обновляем состояние
+        # Логируем изменения в контексте
+        self.logger.info(f"Updated context: {self.cont}")
+
+        yield from extract_jsonpath(self.records_jsonpath, input=items)
+
+
+class UtmsStat(UtmsGet):
+    """Define custom stream."""
+
+    name = "utms_stat"
+    primary_keys = ["date", "utm_id", "subscription_id", "vk_user_id"]
+
+    schema = th.PropertiesList(
+        th.Property(
+            "vk_user_id",
+            th.IntegerType,
+        ),
+        th.Property(
+            "subscription_id",
+            th.IntegerType,
+            description="The subscription's system ID",
+        ),
+        th.Property("utm_id", th.IntegerType),
+        th.Property("date", th.StringType),
+        th.Property("first_name", th.StringType),
+        th.Property("last_name", th.StringType),
+        th.Property("photo", th.StringType),
+        th.Property("action", th.IntegerType),
+        th.Property("ignore", th.IntegerType),
+        th.Property("source", th.StringType),
+        th.Property("school", th.StringType),
+        th.Property("group_id", th.IntegerType),
+        th.Property("utm_source", th.StringType),
+        th.Property("utm_medium", th.StringType),
+        th.Property("utm_campaign", th.StringType),
+        th.Property("utm_content", th.StringType),
+        th.Property("utm_term", th.StringType)
+    ).to_dict()
+
+    def get_records(
+            self,
+            context: Context | None,
+    ) -> t.Iterable[dict]:
+        """Return a generator of record-type dictionary objects.
+
+        The optional `context` argument is used to identify a specific slice of the
+        stream if partitioning is required for the stream. Most implementations do not
+        require partitioning and should ignore the `context` argument.
+
+        Args:
+            context: Stream partition or context dictionary.
+
+        Raises:
+            NotImplementedError: If the implementation is TODO
+        """
+        # Ваш токен доступа
+        # params = self.config.get("params") or {}
+        current_date = datetime.now().date()
+        yesterday_date = current_date - timedelta(days=1)
+
+        # Преобразуем дату в datetime с временем 00:00:00
+        yesterday_datetime = datetime.combine(yesterday_date, datetime.min.time())
+        current_datetime = datetime.combine(current_date, datetime.min.time())
+        yesterday_date = yesterday_datetime.strftime('%Y-%m-%d %H:%M:%S')
+        current_date = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
+
+        token = self.config.get('token')
+        api = Senler(token)
+
+        ids = self.cont.get("ids", [])
+        self.logger.info(f"Get cont: {ids}")
+        items = []
+        for d_id in ids:
+            records = api(
+                methods.Utms.stat_subscribe,
+                date_from=self.config.get('date_from', str(yesterday_date)),
+                date_to=self.config.get('date_to', str(current_date)),
+                vk_group_id=self.config.get('group_id'),
+                utm_id=d_id,
+                count=100
+            )
+            items += records['items']
+            offset = 100
+            while len(records['items']) != 0:
+                records = api(
+                    methods.Utms.stat_subscribe,
+                    date_from=self.config.get('date_from', str(yesterday_date)),
+                    date_to=self.config.get('date_to', str(current_date)),
+                    vk_group_id=self.config.get('group_id'),
+                    utm_id=d_id,
+                    count=100,
+                    offset=offset
+                )
+                items += records['items']
+                offset += 100
+                if offset == 100000:
+                    break
+
+        for i in items:
+            i.update({'school': self.config.get('school'),
+                      'group_id': self.config.get('group_id')})
+        yield from extract_jsonpath(self.records_jsonpath, input=items)
+
