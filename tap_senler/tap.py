@@ -56,7 +56,9 @@ class TapSenler(Tap):
             streams.StatSubscribeStream(self),
             streams.BotsGet(self),
             streams.BotsStat(self),
-            streams.BotsGetSteps(self)
+            streams.BotsGetSteps(self),
+            streams.UtmsGet(self),
+            streams.UtmsStat(self)
         ]
 
 
